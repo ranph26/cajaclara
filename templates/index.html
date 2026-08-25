@@ -66,6 +66,9 @@
         </nav>
     </div>
 
+    <!-- Datalist for dynamic projects -->
+    <datalist id="datalist-proyectos"></datalist>
+
     <!-- Main Content -->
     <div class="flex-1 flex flex-col bg-brand-black print-bg-white h-screen overflow-y-auto">
         <!-- Header -->
@@ -119,7 +122,7 @@
 
                         <div>
                             <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Proyecto / Obra (Opcional)</label>
-                            <input type="text" id="tx-proyecto" placeholder="Ej. Villa Las Palmas" class="w-full bg-brand-dark border border-brand-gray text-white rounded-lg px-4 py-3 focus:outline-none focus:border-brand-yellow">
+                            <input type="text" id="tx-proyecto" list="datalist-proyectos" placeholder="Ej. Villa Las Palmas o selecciona..." class="w-full bg-brand-dark border border-brand-gray text-white rounded-lg px-4 py-3 focus:outline-none focus:border-brand-yellow">
                         </div>
 
                         <div>
@@ -203,8 +206,8 @@
                     </div>
                     <div class="flex gap-4 mt-4">
                         <div class="flex-1">
-                            <label class="block text-xs font-semibold text-zinc-400 uppercase mb-2">Proyecto / Obra (Dejar vacío para reporte general)</label>
-                            <input type="text" id="rep-proyecto" placeholder="Ej. Villa Las Palmas" class="w-full bg-brand-black border border-brand-gray text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-brand-yellow">
+                            <label class="block text-xs font-semibold text-zinc-400 uppercase mb-2">Proyecto / Obra (Dejar vacío para general)</label>
+                            <input type="text" id="rep-proyecto" list="datalist-proyectos" placeholder="Ej. Villa Las Palmas o selecciona..." class="w-full bg-brand-black border border-brand-gray text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-brand-yellow">
                         </div>
                         <div class="flex items-end">
                             <button onclick="generarReporte()" id="btn-generar" class="bg-brand-yellow hover:bg-[#e6c81e] text-brand-black font-bold px-8 py-2.5 rounded-lg transition-all h-[46px]">Generar</button>
@@ -312,10 +315,11 @@
             }
         });
 
+        window.clientesData = {};
         async function cargarClientes() {
             try {
                 const res = await fetch('/api/clientes');
-                const clientes = await res.json();
+                window.clientesData = await res.json();
                 
                 const selectorGlobal = document.getElementById('selector-cliente-global');
                 const txCliente = document.getElementById('tx-cliente');
@@ -327,7 +331,7 @@
                 repCliente.innerHTML = '<option value="" disabled selected>Selecciona un cliente</option>';
                 lista.innerHTML = '';
 
-                clientes.forEach(c => {
+                Object.keys(window.clientesData).forEach(c => {
                     selectorGlobal.innerHTML += `<option value="${c}">${c}</option>`;
                     txCliente.innerHTML += `<option value="${c}">${c}</option>`;
                     repCliente.innerHTML += `<option value="${c}">${c}</option>`;
@@ -337,16 +341,45 @@
                     lista.appendChild(li);
                 });
 
+                async function updateProyectos(clientName) {
+                    const datalist = document.getElementById('datalist-proyectos');
+                    datalist.innerHTML = '';
+                    if(!clientName) return;
+                    
+                    document.getElementById('tx-proyecto').placeholder = "Cargando proyectos...";
+                    document.getElementById('rep-proyecto').placeholder = "Cargando proyectos...";
+                    
+                    try {
+                        const r = await fetch('/api/proyectos', {
+                            method: 'POST', headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({cliente: clientName})
+                        });
+                        const proyectos = await r.json();
+                        proyectos.forEach(p => {
+                            datalist.innerHTML += `<option value="${p}">`;
+                        });
+                    } catch(e) { console.error(e); }
+                    
+                    document.getElementById('tx-proyecto').placeholder = "Ej. Villa Las Palmas o selecciona...";
+                    document.getElementById('rep-proyecto').placeholder = "Ej. Villa Las Palmas o selecciona...";
+                }
+
                 // Sincronizar el selector global con los formularios
-                if(clientes.length > 0) {
+                const clientNames = Object.keys(window.clientesData);
+                if(clientNames.length > 0) {
                     txCliente.value = selectorGlobal.value;
                     repCliente.value = selectorGlobal.value;
+                    updateProyectos(selectorGlobal.value);
                 }
                 
                 selectorGlobal.addEventListener('change', (e) => {
                     txCliente.value = e.target.value;
                     repCliente.value = e.target.value;
+                    updateProyectos(e.target.value);
                 });
+                
+                txCliente.addEventListener('change', (e) => updateProyectos(e.target.value));
+                repCliente.addEventListener('change', (e) => updateProyectos(e.target.value));
                 
             } catch(e) { console.error(e); }
         }
@@ -429,7 +462,11 @@
                     const data = result.data;
                     
                     document.getElementById('rep-cliente-nombre').textContent = cliente;
-                    document.getElementById('rep-mes-texto').textContent = "Reporte de " + mes;
+                    if (proyecto) {
+                        document.getElementById('rep-mes-texto').textContent = `Proyecto: ${proyecto} | Reporte de ${mes}`;
+                    } else {
+                        document.getElementById('rep-mes-texto').textContent = `Reporte General | ${mes}`;
+                    }
                     
                     document.getElementById('rep-ingresos').textContent = fMoneda.format(data.ingresos);
                     document.getElementById('rep-gastos').textContent = fMoneda.format(data.gastos);

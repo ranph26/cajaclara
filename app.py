@@ -54,18 +54,21 @@ def index():
 @login_required
 def get_clientes():
     try:
-        resp = requests.post(f"https://api.notion.com/v1/databases/{NOTION_DB_CLIENTES}/query", headers=headers, json={})
-        data = resp.json()
-        clientes = []
-        for r in data.get("results", []):
-            try:
-                nombre = r["properties"]["Nombre"]["title"][0]["text"]["content"]
-                clientes.append(nombre)
-            except (KeyError, IndexError):
-                pass
-        return jsonify(sorted(clientes))
+        res = requests.post(f"https://api.notion.com/v1/databases/{NOTION_DB_CLIENTES}/query", headers=headers, json={})
+        results = res.json().get('results', [])
+        clientes_data = {}
+        for r in results:
+            props = r['properties']
+            if 'Nombre' in props and props['Nombre']['title']:
+                nombre = props['Nombre']['title'][0]['text']['content']
+                proyectos = []
+                if 'Proyectos' in props and props['Proyectos'].get('rich_text'):
+                    texto_proys = props['Proyectos']['rich_text'][0]['text']['content']
+                    proyectos = [p.strip() for p in texto_proys.split(',') if p.strip()]
+                clientes_data[nombre] = proyectos
+        return jsonify(clientes_data)
     except Exception as e:
-        return jsonify([])
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/clientes', methods=['POST'])
 @login_required
@@ -112,6 +115,31 @@ def crear_transaccion():
             return jsonify({"status": "error", "message": res.text}), 400
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/proyectos', methods=['POST'])
+@login_required
+def get_proyectos():
+    try:
+        cliente = request.json.get('cliente')
+        query = {
+            "filter": {
+                "property": "Cliente o Entidad",
+                "rich_text": { "equals": cliente }
+            }
+        }
+        res = requests.post(f"https://api.notion.com/v1/databases/{NOTION_DB_TX}/query", headers=headers, json=query)
+        results = res.json().get('results', [])
+        
+        proyectos = set()
+        for r in results:
+            props = r['properties']
+            proj = props.get('Proyecto', {}).get('rich_text', [])
+            if proj:
+                proyectos.add(proj[0]['text']['content'].strip())
+        
+        return jsonify(list(proyectos))
+    except Exception as e:
+        return jsonify([])
 
 @app.route('/api/reporte', methods=['POST'])
 @login_required
