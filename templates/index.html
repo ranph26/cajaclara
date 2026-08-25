@@ -97,7 +97,7 @@
                     <h3 class="text-lg font-bold text-white border-b border-brand-gray pb-4 mb-5">Registrar Movimiento</h3>
                     
                     <form id="form-tx" class="space-y-5">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                             <div>
                                 <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Fecha</label>
                                 <input type="date" id="tx-fecha" class="w-full bg-brand-black border border-brand-gray text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-brand-yellow" required>
@@ -109,6 +109,17 @@
                                     <option value="Gasto">Gasto</option>
                                 </select>
                             </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Cliente o Entidad</label>
+                                <select id="tx-cliente" class="w-full bg-brand-dark border border-brand-gray text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-brand-yellow appearance-none" required>
+                                    <option value="" disabled selected>Selecciona un cliente</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Proyecto / Obra (Opcional)</label>
+                            <input type="text" id="tx-proyecto" placeholder="Ej. Villa Las Palmas" class="w-full bg-brand-dark border border-brand-gray text-white rounded-lg px-4 py-3 focus:outline-none focus:border-brand-yellow">
                         </div>
 
                         <div>
@@ -180,8 +191,20 @@
                     <h3 class="text-lg font-bold text-white border-b border-brand-gray pb-4 mb-5">Generar Reporte Mensual</h3>
                     <div class="flex gap-4">
                         <div class="flex-1">
+                            <label class="block text-xs font-semibold text-zinc-400 uppercase mb-2">Cliente o Entidad</label>
+                            <select id="rep-cliente" class="w-full bg-brand-black border border-brand-gray text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-brand-yellow appearance-none" required>
+                                <option value="" disabled selected>Selecciona un cliente</option>
+                            </select>
+                        </div>
+                        <div class="flex-1">
                             <label class="block text-xs font-semibold text-zinc-400 uppercase mb-2">Mes a Consultar</label>
                             <input type="month" id="reporte-mes" class="w-full bg-brand-black border border-brand-gray text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-brand-yellow" required>
+                        </div>
+                    </div>
+                    <div class="flex gap-4 mt-4">
+                        <div class="flex-1">
+                            <label class="block text-xs font-semibold text-zinc-400 uppercase mb-2">Proyecto / Obra (Dejar vacío para reporte general)</label>
+                            <input type="text" id="rep-proyecto" placeholder="Ej. Villa Las Palmas" class="w-full bg-brand-black border border-brand-gray text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-brand-yellow">
                         </div>
                         <div class="flex items-end">
                             <button onclick="generarReporte()" id="btn-generar" class="bg-brand-yellow hover:bg-[#e6c81e] text-brand-black font-bold px-8 py-2.5 rounded-lg transition-all h-[46px]">Generar</button>
@@ -329,14 +352,15 @@
             btn.textContent = "Guardando..."; btn.classList.add("opacity-75");
 
             const data = {
-                cliente: document.getElementById('selector-cliente-global').value,
                 fecha: document.getElementById('tx-fecha').value,
-                fecha_vencimiento: document.getElementById('tx-fecha-vencimiento').value,
-                tipo: document.getElementById('tx-tipo').value,
+                cliente: document.getElementById('tx-cliente').value,
+                proyecto: document.getElementById('tx-proyecto').value,
                 concepto: document.getElementById('tx-concepto').value,
+                tipo: document.getElementById('tx-tipo').value,
                 categoria: document.getElementById('tx-categoria').value,
                 estado: document.getElementById('tx-estado').value,
-                monto: document.getElementById('tx-monto').value
+                monto: document.getElementById('tx-monto').value,
+                fecha_vencimiento: document.getElementById('tx-fecha-vencimiento').value
             };
 
             try {
@@ -368,17 +392,20 @@
         async function generarReporte() {
             const btn = document.getElementById('btn-generar');
             const status = document.getElementById('reporte-status');
-            const cliente = document.getElementById('selector-cliente-global').value;
+            const cliente = document.getElementById('rep-cliente').value;
             const mes = document.getElementById('reporte-mes').value;
+            const proyecto = document.getElementById('rep-proyecto').value;
             
-            btn.textContent = "Cargando...";
+            if(!cliente || !mes) { alert('Selecciona cliente y mes'); return; }
+
+            btn.textContent = "Consultando..."; btn.classList.add("opacity-75");
             status.textContent = "Descargando datos desde Notion...";
             status.classList.remove('hidden');
 
             try {
                 const res = await fetch('/api/reporte', {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({cliente, mes})
+                    body: JSON.stringify({cliente, mes, proyecto})
                 });
                 const result = await res.json();
 

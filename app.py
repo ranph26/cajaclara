@@ -99,6 +99,9 @@ def crear_transaccion():
             }
         }
         
+        if data.get('proyecto'):
+            notion_data["properties"]["Proyecto"] = { "rich_text": [ { "text": { "content": data['proyecto'] } } ] }
+            
         if data.get('fecha_vencimiento'):
             notion_data["properties"]["Fecha Vencimiento"] = { "date": { "start": data['fecha_vencimiento'] } }
 
@@ -116,16 +119,18 @@ def generar_reporte():
     data = request.json
     cliente = data['cliente']
     mes = data['mes']
+    proyecto_filtro = data.get('proyecto', '').strip()
     
-    query = {
-        "filter": {
-            "and": [
-                { "property": "Cliente o Entidad", "rich_text": { "equals": cliente } },
-                { "property": "Fecha", "date": { "on_or_after": f"{mes}-01" } },
-                { "property": "Fecha", "date": { "before": f"{get_next_month(mes)}-01" } }
-            ]
-        }
-    }
+    filters = [
+        { "property": "Cliente o Entidad", "rich_text": { "equals": cliente } },
+        { "property": "Fecha", "date": { "on_or_after": f"{mes}-01" } },
+        { "property": "Fecha", "date": { "before": f"{get_next_month(mes)}-01" } }
+    ]
+    
+    if proyecto_filtro:
+        filters.append({ "property": "Proyecto", "rich_text": { "equals": proyecto_filtro } })
+    
+    query = { "filter": { "and": filters } }
     
     res = requests.post(f"https://api.notion.com/v1/databases/{NOTION_DB_TX}/query", headers=headers, json=query)
     results = res.json().get('results', [])
@@ -133,6 +138,7 @@ def generar_reporte():
     ingresos_totales = 0
     gastos_totales = 0
     gastos_cat = defaultdict(float)
+    gastos_proj = defaultdict(float)
     por_cobrar = []
     por_pagar = []
     
@@ -144,6 +150,8 @@ def generar_reporte():
             estado = props['Estado']['select']['name']
             concepto = props['Concepto']['title'][0]['text']['content']
             cat = props['Categoría']['select']['name'] if props.get('Categoría') and props['Categoría'].get('select') else 'Otros'
+            proj = props.get('Proyecto', {}).get('rich_text', [])
+            proj_name = proj[0]['text']['content'] if proj else 'General'
             
             # Helper para fecha de vencimiento
             f_venc = ""
@@ -156,6 +164,7 @@ def generar_reporte():
                 elif tipo == 'Gasto':
                     gastos_totales += monto
                     gastos_cat[cat] += monto
+                    gastos_proj[proj_name] += monto
             elif estado == 'Pendiente de Cobro':
                 por_cobrar.append({"concepto": concepto, "monto": monto, "vencimiento": f_venc})
             elif estado == 'Pendiente de Pago':
