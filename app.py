@@ -166,6 +166,7 @@ def generar_reporte():
     ingresos_totales = 0
     gastos_totales = 0
     gastos_cat = defaultdict(float)
+    ingresos_cat = defaultdict(float)
     gastos_proj = defaultdict(float)
     por_cobrar = []
     por_pagar = []
@@ -186,9 +187,10 @@ def generar_reporte():
             if props.get('Fecha Vencimiento') and props['Fecha Vencimiento'].get('date'):
                 f_venc = props['Fecha Vencimiento']['date']['start']
             
-            if estado == 'Pagado':
+            if estado == 'Pagado' or estado == 'Cobrado':
                 if tipo == 'Ingreso':
                     ingresos_totales += monto
+                    ingresos_cat[cat] += monto
                 elif tipo == 'Gasto':
                     gastos_totales += monto
                     gastos_cat[cat] += monto
@@ -205,8 +207,9 @@ def generar_reporte():
         "data": {
             "ingresos": ingresos_totales,
             "gastos": gastos_totales,
-            "neto": ingresos_totales - gastos_totales,
+            "ingresos_por_categoria": dict(ingresos_cat),
             "gastos_por_categoria": dict(gastos_cat),
+            "neto": ingresos_totales - gastos_totales,
             "por_cobrar": por_cobrar,
             "por_pagar": por_pagar
         }

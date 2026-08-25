@@ -251,7 +251,13 @@
 
                     <!-- Secciones en bloque horizontal completo (Una debajo de otra) -->
                     <div class="space-y-8 mb-6 print:space-y-8">
-                        <!-- Desglose -->
+                        <!-- Desglose Ingresos -->
+                        <div>
+                            <h4 class="text-sm font-bold text-emerald-400 print-text-black border-b border-brand-gray pb-2 mb-4">Distribución de Ingresos</h4>
+                            <ul id="rep-ingresos-lista" class="space-y-3"></ul>
+                        </div>
+
+                        <!-- Desglose Gastos -->
                         <div>
                             <h4 class="text-sm font-bold text-white print-text-black border-b border-brand-gray pb-2 mb-4">Distribución de Gastos</h4>
                             <ul id="rep-gastos-lista" class="space-y-3"></ul>
@@ -484,6 +490,16 @@
                     document.getElementById('rep-ingresos').textContent = fMoneda.format(data.ingresos);
                     document.getElementById('rep-gastos').textContent = fMoneda.format(data.gastos);
                     document.getElementById('rep-neto').textContent = fMoneda.format(data.neto);
+                    
+                    const uIngresos = document.getElementById('rep-ingresos-lista');
+                    uIngresos.innerHTML = '';
+                    if(!data.ingresos_por_categoria || Object.keys(data.ingresos_por_categoria).length === 0) {
+                        uIngresos.innerHTML = '<li class="text-sm text-zinc-500">No hay ingresos registrados</li>';
+                    } else {
+                        for (const [cat, monto] of Object.entries(data.ingresos_por_categoria)) {
+                            uIngresos.innerHTML += `<li class="grid grid-cols-[1fr_auto] gap-4 items-start text-sm"><span class="text-zinc-400 print-text-black break-words">${cat}</span><span class="font-bold text-white print-text-black text-right whitespace-nowrap">${fMoneda.format(monto)}</span></li>`;
+                        }
+                    }
 
                     const uGastos = document.getElementById('rep-gastos-lista');
                     uGastos.innerHTML = '';
