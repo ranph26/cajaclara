@@ -46,6 +46,7 @@
             .h-screen { height: auto !important; }
             .overflow-y-auto, .overflow-hidden { overflow: visible !important; }
             .border, .border-b, .print-border { border: none !important; box-shadow: none !important; }
+            .no-print { display: none !important; }
             .print-bg-white { background-color: white !important; }
             .print-text-black { color: black !important; }
             
@@ -236,15 +237,15 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 print:grid-cols-3 gap-4 mb-6">
                         <div class="bg-brand-black print-bg-white border border-brand-gray print-border p-3 rounded-lg">
                             <p class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Ingresos Totales</p>
-                            <p class="text-xl font-bold text-emerald-400 print-text-black mt-1" id="rep-ingresos">RD$ 0.00</p>
+                            <p class="text-lg md:text-xl font-bold text-emerald-400 print-text-black mt-1 whitespace-nowrap tracking-tight" id="rep-ingresos">RD$ 0.00</p>
                         </div>
                         <div class="bg-brand-black print-bg-white border border-brand-gray print-border p-3 rounded-lg">
                             <p class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Gastos Totales</p>
-                            <p class="text-xl font-bold text-rose-400 print-text-black mt-1" id="rep-gastos">RD$ 0.00</p>
+                            <p class="text-lg md:text-xl font-bold text-rose-400 print-text-black mt-1 whitespace-nowrap tracking-tight" id="rep-gastos">RD$ 0.00</p>
                         </div>
                         <div class="bg-brand-yellow/10 print-bg-white border border-brand-yellow print-border p-3 rounded-lg">
                             <p class="text-xs font-semibold text-brand-yellow print-text-black uppercase tracking-wider">Beneficio Neto</p>
-                            <p class="text-xl font-black text-brand-yellow print-text-black mt-1" id="rep-neto">RD$ 0.00</p>
+                            <p class="text-lg md:text-xl font-black text-brand-yellow print-text-black mt-1 whitespace-nowrap tracking-tight" id="rep-neto">RD$ 0.00</p>
                         </div>
                     </div>
 
@@ -270,9 +271,9 @@
                     </div>
 
                     <!-- Observaciones -->
-                    <div>
+                    <div id="rep-observaciones">
                         <h4 class="text-sm font-bold text-brand-yellow print-text-black mb-2">Observaciones del Consultor</h4>
-                        <textarea class="w-full bg-brand-black print-bg-white border border-brand-gray print-border text-white print-text-black rounded-lg p-4 focus:outline-none min-h-[100px]" placeholder="Escribe aquí tus recomendaciones para el cliente..."></textarea>
+                        <textarea id="rep-obs-text" class="w-full bg-brand-black print-bg-white border border-brand-gray print-border text-white print-text-black rounded-lg p-4 focus:outline-none min-h-[100px]" placeholder="Escribe aquí tus recomendaciones para el cliente..."></textarea>
                     </div>
 
                     <div class="mt-8 text-center no-print">
@@ -315,6 +316,16 @@
                 divV.classList.add('hidden-tab');
                 inV.value = '';
             }
+        });
+
+        // Ocultar sección de observaciones si está vacía al imprimir
+        window.addEventListener('beforeprint', () => {
+            const obs = document.getElementById('rep-observaciones');
+            const text = document.getElementById('rep-obs-text').value.trim();
+            if (!text) obs.classList.add('hidden');
+        });
+        window.addEventListener('afterprint', () => {
+            document.getElementById('rep-observaciones').classList.remove('hidden');
         });
 
         window.clientesData = {};
