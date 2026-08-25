@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CajaClara</title>
+    
+    <!-- Iconos y PWA (Mobile App) -->
+    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="CajaClara">
+    <meta name="theme-color" content="#09090b">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'brand-yellow': '#FFDE21',
+              'brand-black': '#09090b',
+              'brand-dark': '#18181b',
+              'brand-gray': '#27272a',
+              'brand-light': '#e4e4e7'
+            }
+          }
+        }
+      }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #09090b; color: #e4e4e7; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #18181b; }
+        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #FFDE21; }
+        .hidden-tab { display: none !important; }
+        
+        @media print {
+            html, body { height: auto !important; overflow: visible !important; background-color: white !important; color: black !important; }
+            .h-screen { height: auto !important; }
+            .overflow-y-auto, .overflow-hidden { overflow: visible !important; }
+            
+            .no-print { display: none !important; }
+            .print-border { border: 1px solid #ddd !important; box-shadow: none !important; }
+            .print-bg-white { background-color: white !important; }
+            .print-text-black { color: black !important; }
+            
+            li { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden">
+
+    <!-- Sidebar -->
+    <div class="w-64 bg-brand-dark border-r border-brand-gray flex flex-col hidden md:flex no-print">
+        <div class="p-6">
+            <h1 class="text-2xl font-black tracking-wider text-brand-yellow">CAJA<span class="text-white">CLARA</span></h1>
+            <p class="text-zinc-500 text-xs mt-1 uppercase tracking-widest font-semibold">Consulting</p>
+        </div>
+        <nav class="flex-1 px-4 space-y-2 mt-4">
+            <button onclick="switchTab('tab-transaccion')" id="nav-transaccion" class="w-full text-left px-4 py-3 bg-brand-yellow text-brand-black rounded-lg text-sm font-bold shadow-[0_0_15px_rgba(255,222,33,0.15)] transition-all">Nueva Transacción</button>
+            <button onclick="switchTab('tab-directorio')" id="nav-directorio" class="w-full text-left px-4 py-3 text-zinc-400 hover:bg-brand-gray hover:text-white rounded-lg text-sm font-medium transition-colors">Directorio Clientes</button>
+            <button onclick="switchTab('tab-reportes')" id="nav-reportes" class="w-full text-left px-4 py-3 text-zinc-400 hover:bg-brand-gray hover:text-white rounded-lg text-sm font-medium transition-colors">Generar Reporte</button>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col bg-brand-black print-bg-white h-screen overflow-y-auto">
+        <!-- Header -->
+        <header class="bg-brand-dark border-b border-brand-gray px-4 md:px-8 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 z-10 sticky top-0 no-print">
+            <div class="md:hidden flex justify-between w-full">
+                <h1 class="text-xl font-black tracking-wider text-brand-yellow">CAJA<span class="text-white">CLARA</span></h1>
+                <div class="flex gap-2">
+                    <button onclick="switchTab('tab-transaccion')" class="px-2 py-1 bg-brand-yellow text-black text-xs font-bold rounded">TX</button>
+                    <button onclick="switchTab('tab-directorio')" class="px-2 py-1 bg-brand-gray text-white text-xs font-bold rounded">CL</button>
+                    <button onclick="switchTab('tab-reportes')" class="px-2 py-1 bg-brand-gray text-white text-xs font-bold rounded">REP</button>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3 w-full md:w-auto">
+                <span class="text-sm font-medium text-zinc-400 whitespace-nowrap">Cliente Activo:</span>
+                <select id="selector-cliente-global" class="w-full md:w-64 bg-brand-gray border border-zinc-700 text-white rounded-md px-3 py-2 text-sm focus:outline-none focus:border-brand-yellow">
+                    <option>Cargando clientes...</option>
+                </select>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <main class="flex-1 p-4 md:p-8 print-bg-white print-text-black print:p-0">
+            
+            <!-- TAB: TRANSACCIONES -->
+            <div id="tab-transaccion" class="max-w-3xl mx-auto no-print">
+                <div class="bg-brand-dark rounded-xl border border-brand-gray p-6 shadow-2xl relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-brand-yellow"></div>
+                    <h3 class="text-lg font-bold text-white border-b border-brand-gray pb-4 mb-5">Registrar Movimiento</h3>
+                    
+                    <form id="form-tx" class="space-y-5">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Fecha</label>
+                                <input type="date" id="tx-fecha" class="w-full bg-brand-black border border-brand-gray text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-brand-yellow" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Tipo</label>
+                                <select id="tx-tipo" class="w-full bg-brand-black border border-brand-gray text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-brand-yellow">
+                                    <option value="Ingreso">Ingreso</option>
+                                    <option value="Gasto">Gasto</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Concepto</label>
+                            <input type="text" id="tx-concepto" placeholder="Ej. Factura eléctrica" class="w-full bg-brand-black border border-brand-gray text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-brand-yellow" required>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Categoría</label>
+                                <select id="tx-categoria" class="w-full bg-brand-black border border-brand-gray text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-brand-yellow">
+                                    <option>Ventas</option>
+                                    <option>Servicios Básicos</option>
+                                    <option>Nómina</option>
+                                    <option>Suplidores</option>
+                                    <option>Otros</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Estado</label>
+                                <select id="tx-estado" class="w-full bg-brand-black border border-brand-gray text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-brand-yellow">
+                                    <option>Pagado</option>
+                                    <option>Pendiente de Cobro</option>
+                                    <option>Pendiente de Pago</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2 text-brand-yellow">Monto (RD$)</label>
+                                <input type="number" step="0.01" id="tx-monto" class="w-full bg-brand-black border border-brand-yellow/50 text-white rounded-lg px-4 py-2.5 text-right font-bold focus:outline-none focus:border-brand-yellow" required>
+                            </div>
+                        </div>
+                        
+                        <div id="div-vencimiento" class="hidden-tab">
+                            <label class="block text-xs font-semibold text-rose-400 uppercase tracking-wider mb-2">Fecha Límite / Vencimiento</label>
+                            <input type="date" id="tx-fecha-vencimiento" class="w-full bg-brand-black border border-rose-900/50 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-rose-500">
+                        </div>
+
+                        <div class="pt-6 mt-2 border-t border-brand-gray">
+                            <button type="submit" id="btn-guardar" class="w-full bg-brand-yellow hover:bg-[#e6c81e] text-brand-black font-bold py-3.5 rounded-lg transition-all">
+                                GUARDAR EN NOTION
+                            </button>
+                        </div>
+                        <p id="tx-status" class="text-center text-sm font-bold hidden mt-2"></p>
+                    </form>
+                </div>
+            </div>
+
+            <!-- TAB: DIRECTORIO -->
+            <div id="tab-directorio" class="hidden-tab max-w-3xl mx-auto space-y-6 no-print">
+                <div class="bg-brand-dark rounded-xl border border-brand-gray p-6 shadow-xl relative overflow-hidden">
+                    <h3 class="text-lg font-bold text-white border-b border-brand-gray pb-4 mb-5">Agregar Nuevo Cliente</h3>
+                    <form id="form-cliente" class="flex gap-4">
+                        <input type="text" id="nuevo-cliente-nombre" placeholder="Nombre de la empresa o cliente" class="flex-1 bg-brand-black border border-brand-gray text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-brand-yellow" required>
+                        <button type="submit" class="bg-brand-gray hover:bg-zinc-700 text-white font-bold px-6 py-2.5 rounded-lg border border-zinc-600 transition-colors">Agregar</button>
+                    </form>
+                </div>
+
+                <div class="bg-brand-dark rounded-xl border border-brand-gray p-6 shadow-xl">
+                    <h3 class="text-lg font-bold text-brand-yellow border-b border-brand-gray pb-4 mb-5">Tus Clientes Activos</h3>
+                    <ul id="lista-clientes" class="space-y-2"></ul>
+                </div>
+            </div>
+
+            <!-- TAB: REPORTES -->
+            <!-- Agregamos clases print:max-w-full y print:w-full para usar todo el ancho de la hoja -->
+            <div id="tab-reportes" class="hidden-tab max-w-4xl mx-auto space-y-6 print:max-w-full print:w-full print:m-0">
+                <!-- Controles del reporte -->
+                <div class="bg-brand-dark rounded-xl border border-brand-gray p-6 shadow-xl no-print">
+                    <h3 class="text-lg font-bold text-white border-b border-brand-gray pb-4 mb-5">Generar Reporte Mensual</h3>
+                    <div class="flex gap-4">
+                        <div class="flex-1">
+                            <label class="block text-xs font-semibold text-zinc-400 uppercase mb-2">Mes a Consultar</label>
+                            <input type="month" id="reporte-mes" class="w-full bg-brand-black border border-brand-gray text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-brand-yellow" required>
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="generarReporte()" id="btn-generar" class="bg-brand-yellow hover:bg-[#e6c81e] text-brand-black font-bold px-8 py-2.5 rounded-lg transition-all h-[46px]">Generar</button>
+                        </div>
+                    </div>
+                    <p id="reporte-status" class="text-sm font-bold mt-3 text-brand-yellow hidden"></p>
+                </div>
+
+                <!-- El Reporte Visual -->
+                <!-- Eliminamos bordes y sombras en la version print -->
+                <div id="reporte-resultado" class="hidden-tab bg-brand-dark print-bg-white rounded-xl border border-brand-gray print-border p-8 shadow-xl print:shadow-none print:border-none print:p-0">
+                    <div class="flex justify-between items-start border-b border-brand-gray pb-6 mb-6">
+                        <div>
+                            <h2 class="text-3xl font-black text-white print-text-black" id="rep-cliente-nombre">Nombre del Cliente</h2>
+                            <p class="text-zinc-400 font-semibold uppercase tracking-wider mt-1" id="rep-mes-texto">Agosto 2026</p>
+                        </div>
+                        <div class="text-right">
+                            <h1 class="text-xl font-black tracking-wider text-brand-yellow print-text-black">CAJA<span class="text-white print-text-black">CLARA</span></h1>
+                            <p class="text-xs text-zinc-500">Reporte Ejecutivo</p>
+                        </div>
+                    </div>
+
+                    <!-- Kpis -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 print:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-brand-black print-bg-white border border-brand-gray print-border p-3 rounded-lg">
+                            <p class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Ingresos Totales</p>
+                            <p class="text-xl font-bold text-emerald-400 print-text-black mt-1" id="rep-ingresos">RD$ 0.00</p>
+                        </div>
+                        <div class="bg-brand-black print-bg-white border border-brand-gray print-border p-3 rounded-lg">
+                            <p class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Gastos Totales</p>
+                            <p class="text-xl font-bold text-rose-400 print-text-black mt-1" id="rep-gastos">RD$ 0.00</p>
+                        </div>
+                        <div class="bg-brand-yellow/10 print-bg-white border border-brand-yellow print-border p-3 rounded-lg">
+                            <p class="text-xs font-semibold text-brand-yellow print-text-black uppercase tracking-wider">Beneficio Neto</p>
+                            <p class="text-xl font-black text-brand-yellow print-text-black mt-1" id="rep-neto">RD$ 0.00</p>
+                        </div>
+                    </div>
+
+                    <!-- Secciones en bloque horizontal completo (Una debajo de otra) -->
+                    <div class="space-y-8 mb-6 print:space-y-8">
+                        <!-- Desglose -->
+                        <div>
+                            <h4 class="text-sm font-bold text-white print-text-black border-b border-brand-gray pb-2 mb-4">Distribución de Gastos</h4>
+                            <ul id="rep-gastos-lista" class="space-y-3"></ul>
+                        </div>
+                        
+                        <!-- Cuentas por Cobrar -->
+                        <div>
+                            <h4 class="text-sm font-bold text-emerald-400 print-text-black border-b border-brand-gray pb-2 mb-4">Pendiente de Cobro (A Favor)</h4>
+                            <ul id="rep-cobrar-lista" class="space-y-3"></ul>
+                        </div>
+
+                        <!-- Cuentas por Pagar -->
+                        <div>
+                            <h4 class="text-sm font-bold text-rose-400 print-text-black border-b border-brand-gray pb-2 mb-4">Pendiente de Pago (Deudas)</h4>
+                            <ul id="rep-pagar-lista" class="space-y-3"></ul>
+                        </div>
+                    </div>
+
+                    <!-- Observaciones -->
+                    <div>
+                        <h4 class="text-sm font-bold text-brand-yellow print-text-black mb-2">Observaciones del Consultor</h4>
+                        <textarea class="w-full bg-brand-black print-bg-white border border-brand-gray print-border text-white print-text-black rounded-lg p-4 focus:outline-none min-h-[100px]" placeholder="Escribe aquí tus recomendaciones para el cliente..."></textarea>
+                    </div>
+
+                    <div class="mt-8 text-center no-print">
+                        <button onclick="window.print()" class="bg-brand-gray hover:bg-zinc-700 text-white font-bold px-8 py-3 rounded-lg border border-zinc-600 transition-colors">
+                            Guardar como PDF / Imprimir
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+        </main>
+    </div>
+
+    <script>
+        document.getElementById('tx-fecha').valueAsDate = new Date();
+        let today = new Date();
+        document.getElementById('reporte-mes').value = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
+
+        function switchTab(tabId) {
+            document.getElementById('tab-transaccion').classList.add('hidden-tab');
+            document.getElementById('tab-directorio').classList.add('hidden-tab');
+            document.getElementById('tab-reportes').classList.add('hidden-tab');
+            
+            document.getElementById(tabId).classList.remove('hidden-tab');
+
+            ['nav-transaccion', 'nav-directorio', 'nav-reportes'].forEach(nav => {
+                document.getElementById(nav).className = "w-full text-left px-4 py-3 text-zinc-400 hover:bg-brand-gray hover:text-white rounded-lg text-sm font-medium transition-colors";
+            });
+            
+            let activeNav = 'nav-' + tabId.split('-')[1];
+            document.getElementById(activeNav).className = "w-full text-left px-4 py-3 bg-brand-yellow text-brand-black rounded-lg text-sm font-bold shadow-[0_0_15px_rgba(255,222,33,0.15)] transition-all";
+        }
+        
+        document.getElementById('tx-estado').addEventListener('change', function(e) {
+            const divV = document.getElementById('div-vencimiento');
+            const inV = document.getElementById('tx-fecha-vencimiento');
+            if (e.target.value === 'Pendiente de Cobro' || e.target.value === 'Pendiente de Pago') {
+                divV.classList.remove('hidden-tab');
+            } else {
+                divV.classList.add('hidden-tab');
+                inV.value = '';
+            }
+        });
+
+        async function cargarClientes() {
+            try {
+                const res = await fetch('/api/clientes');
+                const clientes = await res.json();
+                
+                const selector = document.getElementById('selector-cliente-global');
+                const lista = document.getElementById('lista-clientes');
+                selector.innerHTML = '';
+                lista.innerHTML = '';
+
+                clientes.forEach(c => {
+                    let opt = document.createElement('option');
+                    opt.value = c; opt.textContent = c;
+                    selector.appendChild(opt);
+
+                    let li = document.createElement('li');
+                    li.className = "flex justify-between items-center p-3.5 bg-brand-black border border-brand-gray rounded-lg";
+                    li.innerHTML = `<span class="font-bold text-white text-sm">${c}</span>`;
+                    lista.appendChild(li);
+                });
+            } catch(e) { console.error(e); }
+        }
+
+        document.getElementById('form-cliente').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const nombre = document.getElementById('nuevo-cliente-nombre').value;
+            await fetch('/api/clientes', {
+                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({nombre})
+            });
+            document.getElementById('nuevo-cliente-nombre').value = '';
+            cargarClientes();
+        });
+
+        document.getElementById('form-tx').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-guardar');
+            const status = document.getElementById('tx-status');
+            btn.textContent = "Guardando..."; btn.classList.add("opacity-75");
+
+            const data = {
+                cliente: document.getElementById('selector-cliente-global').value,
+                fecha: document.getElementById('tx-fecha').value,
+                fecha_vencimiento: document.getElementById('tx-fecha-vencimiento').value,
+                tipo: document.getElementById('tx-tipo').value,
+                concepto: document.getElementById('tx-concepto').value,
+                categoria: document.getElementById('tx-categoria').value,
+                estado: document.getElementById('tx-estado').value,
+                monto: document.getElementById('tx-monto').value
+            };
+
+            try {
+                const res = await fetch('/api/transacciones', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                if (result.status === 'success') {
+                    status.textContent = "¡Transacción guardada en Notion!";
+                    status.className = "text-center text-sm font-bold mt-3 text-emerald-400 block";
+                    document.getElementById('tx-concepto').value = '';
+                    document.getElementById('tx-monto').value = '';
+                    
+                    document.getElementById('tx-estado').value = 'Pagado';
+                    document.getElementById('div-vencimiento').classList.add('hidden-tab');
+                    document.getElementById('tx-fecha-vencimiento').value = '';
+                } else { throw new Error(result.message); }
+            } catch(e) {
+                status.textContent = "Error: " + e.message;
+                status.className = "text-center text-sm font-bold mt-3 text-rose-400 block";
+            } finally {
+                btn.textContent = "GUARDAR EN NOTION"; btn.classList.remove("opacity-75");
+                setTimeout(() => status.classList.add('hidden'), 4000);
+            }
+        });
+
+        const fMoneda = new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' });
+
+        async function generarReporte() {
+            const btn = document.getElementById('btn-generar');
+            const status = document.getElementById('reporte-status');
+            const cliente = document.getElementById('selector-cliente-global').value;
+            const mes = document.getElementById('reporte-mes').value;
+            
+            btn.textContent = "Cargando...";
+            status.textContent = "Descargando datos desde Notion...";
+            status.classList.remove('hidden');
+
+            try {
+                const res = await fetch('/api/reporte', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({cliente, mes})
+                });
+                const result = await res.json();
+
+                if (result.status === 'success') {
+                    const data = result.data;
+                    
+                    document.getElementById('rep-cliente-nombre').textContent = cliente;
+                    document.getElementById('rep-mes-texto').textContent = "Reporte de " + mes;
+                    
+                    document.getElementById('rep-ingresos').textContent = fMoneda.format(data.ingresos);
+                    document.getElementById('rep-gastos').textContent = fMoneda.format(data.gastos);
+                    document.getElementById('rep-neto').textContent = fMoneda.format(data.neto);
+
+                    const uGastos = document.getElementById('rep-gastos-lista');
+                    uGastos.innerHTML = '';
+                    if(Object.keys(data.gastos_por_categoria).length === 0) uGastos.innerHTML = '<li class="text-sm text-zinc-500">No hay gastos registrados</li>';
+                    for (const [cat, monto] of Object.entries(data.gastos_por_categoria)) {
+                        uGastos.innerHTML += `<li class="grid grid-cols-[1fr_auto] gap-4 items-start text-sm"><span class="text-zinc-400 print-text-black break-words">${cat}</span><span class="font-bold text-white print-text-black text-right whitespace-nowrap">${fMoneda.format(monto)}</span></li>`;
+                    }
+
+                    const uCobrar = document.getElementById('rep-cobrar-lista');
+                    uCobrar.innerHTML = '';
+                    if(data.por_cobrar.length === 0) uCobrar.innerHTML = '<li class="text-sm text-zinc-500">Nada pendiente por cobrar</li>';
+                    data.por_cobrar.forEach(item => {
+                        uCobrar.innerHTML += `<li class="bg-brand-black print-bg-white border border-brand-gray print-border p-3 rounded-lg"><div class="grid grid-cols-[1fr_auto] gap-4 items-start"><span class="font-bold text-sm text-white print-text-black break-words">${item.concepto}</span><span class="font-bold text-emerald-400 print-text-black text-right whitespace-nowrap">${fMoneda.format(item.monto)}</span></div><div class="text-xs text-zinc-500 mt-1">Vence: ${item.vencimiento}</div></li>`;
+                    });
+
+                    const uPagar = document.getElementById('rep-pagar-lista');
+                    uPagar.innerHTML = '';
+                    if(data.por_pagar.length === 0) uPagar.innerHTML = '<li class="text-sm text-zinc-500">Nada pendiente por pagar</li>';
+                    data.por_pagar.forEach(item => {
+                        uPagar.innerHTML += `<li class="bg-brand-black print-bg-white border border-brand-gray print-border p-3 rounded-lg"><div class="grid grid-cols-[1fr_auto] gap-4 items-start"><span class="font-bold text-sm text-white print-text-black break-words">${item.concepto}</span><span class="font-bold text-rose-400 print-text-black text-right whitespace-nowrap">${fMoneda.format(item.monto)}</span></div><div class="text-xs text-zinc-500 mt-1">Vence: ${item.vencimiento}</div></li>`;
+                    });
+
+                    document.getElementById('reporte-resultado').classList.remove('hidden-tab');
+                    status.classList.add('hidden');
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch(e) {
+                status.textContent = "Error: " + e.message;
+            } finally {
+                btn.textContent = "Generar";
+            }
+        }
+
+        cargarClientes();
+    </script>
+</body>
+</html>
