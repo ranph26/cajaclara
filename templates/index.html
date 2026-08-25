@@ -148,7 +148,7 @@
 
                         <div class="pt-6 mt-2 border-t border-brand-gray">
                             <button type="submit" id="btn-guardar" class="w-full bg-brand-yellow hover:bg-[#e6c81e] text-brand-black font-bold py-3.5 rounded-lg transition-all">
-                                GUARDAR EN NOTION
+                                GUARDAR
                             </button>
                         </div>
                         <p id="tx-status" class="text-center text-sm font-bold hidden mt-2"></p>
@@ -358,7 +358,7 @@
                 status.textContent = "Error: " + e.message;
                 status.className = "text-center text-sm font-bold mt-3 text-rose-400 block";
             } finally {
-                btn.textContent = "GUARDAR EN NOTION"; btn.classList.remove("opacity-75");
+                btn.textContent = "GUARDAR"; btn.classList.remove("opacity-75");
                 setTimeout(() => status.classList.add('hidden'), 4000);
             }
         });
