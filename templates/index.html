@@ -287,7 +287,7 @@
                     </div>
 
                     <div class="mt-8 text-center no-print">
-                        <button onclick="window.print()" class="bg-brand-gray hover:bg-zinc-700 text-white font-bold px-8 py-3 rounded-lg border border-zinc-600 transition-colors">
+                        <button onclick="imprimirReporte()" class="bg-brand-gray hover:bg-zinc-700 text-white font-bold px-8 py-3 rounded-lg border border-zinc-600 transition-colors">
                             Guardar como PDF / Imprimir
                         </button>
                     </div>
@@ -298,6 +298,24 @@
     </div>
 
     <script>
+        function imprimirReporte() {
+            const cliente = document.getElementById('rep-cliente').value || "Cliente";
+            const proyecto = document.getElementById('rep-proyecto').value;
+            
+            const modoAnual = !document.getElementById('reporte-anio').classList.contains('hidden-tab');
+            const periodo = modoAnual ? document.getElementById('reporte-anio').value : document.getElementById('reporte-mes').value;
+            
+            let filename = cliente;
+            if (proyecto) filename += ` - ${proyecto}`;
+            if (periodo) filename += ` ${periodo}`;
+            
+            const originalTitle = document.title;
+            document.title = filename;
+            window.print();
+            
+            // Revertir el título original despues de imprimir
+            setTimeout(() => { document.title = originalTitle; }, 1000);
+        }
         document.getElementById('tx-fecha').valueAsDate = new Date();
         let today = new Date();
         document.getElementById('reporte-mes').value = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
