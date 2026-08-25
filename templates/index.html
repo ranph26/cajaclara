@@ -37,8 +37,12 @@
         ::-webkit-scrollbar-thumb:hover { background: #FFDE21; }
         .hidden-tab { display: none !important; }
         
+        @page {
+            margin: 0;
+        }
+
         @media print {
-            html, body { height: auto !important; overflow: visible !important; background-color: white !important; color: black !important; }
+            html, body { height: auto !important; overflow: visible !important; background-color: white !important; color: black !important; padding: 1.5cm !important; }
             .h-screen { height: auto !important; }
             .overflow-y-auto, .overflow-hidden { overflow: visible !important; }
             
