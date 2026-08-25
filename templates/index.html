@@ -489,7 +489,7 @@
                     uGastos.innerHTML = '';
                     if(Object.keys(data.gastos_por_categoria).length === 0) uGastos.innerHTML = '<li class="text-sm text-zinc-500">No hay gastos registrados</li>';
                     for (const [cat, monto] of Object.entries(data.gastos_por_categoria)) {
-                        uGastos.innerHTML += `<li class="grid grid-cols-[1fr_auto] gap-4 items-start text-sm"><span class="text-zinc-400 print-text-black break-words">${cat}</span><span class="font-bold text-white print-text-black text-right whitespace-nowrap">${fMoneda.format(monto)}</span></li>`;
+                        uGastos.innerHTML += `<li class="grid grid-cols-[1fr_auto] gap-4 items-start text-sm"><span class="text-zinc-400 print-text-black break-words">${cat}</span><span class="font-bold text-white print-text-black text-right whitespace-nowrap">${fMoneda.format(-monto)}</span></li>`;
                     }
 
                     const uCobrar = document.getElementById('rep-cobrar-lista');
