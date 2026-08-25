@@ -146,14 +146,21 @@ def get_proyectos():
 def generar_reporte():
     data = request.json
     cliente = data['cliente']
-    mes = data['mes']
+    periodo = data.get('periodo') or data.get('mes')  # Retro-compatibility
     proyecto_filtro = data.get('proyecto', '').strip()
     
     filters = [
-        { "property": "Cliente o Entidad", "rich_text": { "equals": cliente } },
-        { "property": "Fecha", "date": { "on_or_after": f"{mes}-01" } },
-        { "property": "Fecha", "date": { "before": f"{get_next_month(mes)}-01" } }
+        { "property": "Cliente o Entidad", "rich_text": { "equals": cliente } }
     ]
+    
+    if len(periodo) == 4:
+        # Anual: YYYY
+        filters.append({ "property": "Fecha", "date": { "on_or_after": f"{periodo}-01-01" } })
+        filters.append({ "property": "Fecha", "date": { "before": f"{int(periodo)+1}-01-01" } })
+    else:
+        # Mensual: YYYY-MM
+        filters.append({ "property": "Fecha", "date": { "on_or_after": f"{periodo}-01" } })
+        filters.append({ "property": "Fecha", "date": { "before": f"{get_next_month(periodo)}-01" } })
     
     if proyecto_filtro:
         filters.append({ "property": "Proyecto", "rich_text": { "equals": proyecto_filtro } })
